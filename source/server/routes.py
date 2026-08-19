@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, abort, request
 
-from source.database import delete_portfolio as delete_portfolio_record
-from source.database import list_portfolios, save_portfolio
+from provider.instrument_provider import InstrumentProvider
+from provider.portfolio_provider import PortfolioProvider
 from source.model.portfolio import Portfolio
 from .data import tickers
 
@@ -51,7 +51,7 @@ def get_portfolios():
       200:
         description: Portfolio list
     """
-    return jsonify(list_portfolios())
+    return jsonify(PortfolioProvider.list_portfolios())
 
 
 @bp.route("/portfolios/<name>", methods=["GET"])
@@ -70,7 +70,7 @@ def get_portfolio_by_name(name):
       404:
         description: Portfolio not found
     """
-    portfolio = Portfolio.load(name)
+    portfolio = PortfolioProvider.get_by_name(name)
     if portfolio is None:
         abort(404)
 
@@ -94,12 +94,12 @@ def create_portfolio():
           type: object
           required:
             - name
-            - tickers
+            - instruments
           properties:
             name:
               type: string
               example: mi_portfolio
-            tickers:
+            instruments:
               type: array
               items:
                 type: string
@@ -113,7 +113,7 @@ def create_portfolio():
     payload = request.get_json(silent=True) or {}
 
     name = payload.get("name")
-    tickers = payload.get("tickers") or []
+    instruments = payload.get("instruments") or payload.get("tickers") or []
 
     if not name:
         return jsonify({"error": "Portfolio name is required."}), 400
@@ -122,16 +122,17 @@ def create_portfolio():
     if not clean_name:
         return jsonify({"error": "Portfolio name is required."}), 400
 
-    if not isinstance(tickers, list) or not tickers:
-        return jsonify({"error": "Portfolio tickers must be a non-empty list."}), 400
+    if not isinstance(instruments, list) or not instruments:
+        return jsonify({"error": "Portfolio instruments must be a non-empty list."}), 400
 
-    portfolio = Portfolio(tickers=[str(t).upper() for t in tickers], name=clean_name, lazy=True)
-    saved = save_portfolio(portfolio)
+    portfolio = Portfolio(instruments=[str(t).upper() for t in instruments], name=clean_name, lazy=True)
+    saved = PortfolioProvider.save(portfolio)
 
     return jsonify({
         "id": saved.id,
         "name": saved.name,
-        "tickers": saved.tickers,
+        "instruments": saved.instruments,
+        "tickers": saved.instruments,
     }), 201
 
 
@@ -155,17 +156,18 @@ def create_empty_portfolio(name):
     if not clean_name:
         return jsonify({"error": "Portfolio name is required."}), 400
 
-    existing = Portfolio.load(clean_name)
+    existing = PortfolioProvider.get_by_name(clean_name)
     if existing is not None:
         return jsonify({"error": f"Portfolio '{clean_name}' already exists."}), 409
 
-    portfolio = Portfolio(tickers=[], name=clean_name, lazy=True)
-    saved = save_portfolio(portfolio)
+    portfolio = Portfolio(instruments=[], name=clean_name, lazy=True)
+    saved = PortfolioProvider.save(portfolio)
 
     return jsonify({
         "id": saved.id,
         "name": saved.name,
-        "tickers": saved.tickers,
+        "instruments": saved.instruments,
+        "tickers": saved.instruments,
     }), 201
 
 
@@ -185,10 +187,37 @@ def delete_portfolio(name):
       404:
         description: Portfolio not found
     """
-    deleted = delete_portfolio_record(name)
+    deleted = PortfolioProvider.delete(name)
     if not deleted:
         abort(404)
     return jsonify({"deleted": True, "name": name})
+
+
+@bp.route("/searchInstrument/<ticker>", methods=["GET"])
+def search_instrument(ticker):
+    """
+    Get financial details for a ticker symbol
+    ---
+    parameters:
+      - name: ticker
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Instrument details returned successfully
+      404:
+        description: Instrument not found
+    """
+    ticker_symbol = str(ticker).strip().upper()
+    if not ticker_symbol:
+        return jsonify({"error": "Ticker is required."}), 400
+
+    details = InstrumentProvider.get_instrument_details(ticker_symbol)
+    if details is None:
+        return jsonify({"error": "Instrument not found or unavailable."}), 404
+
+    return jsonify(details)
 
 
 @bp.route("/health", methods=["GET"])

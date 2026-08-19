@@ -7,19 +7,20 @@ from portfolio import Portfolio
 
 def test_init():
     p = Portfolio(['AAPL', 'MSFT'])
+    assert p.instruments == ['AAPL', 'MSFT']
     assert p.tickers == ['AAPL', 'MSFT']
     assert p.data is None
 
 
 def test_save_ticker_new_and_existing():
     p = Portfolio(['AAPL'])
-    res = p.save_ticker('MSFT')
+    res = p.save_instrument('MSFT')
     assert 'agregado' in res
-    assert 'MSFT' in p.tickers
+    assert 'MSFT' in p.instruments
 
-    res2 = p.save_ticker('MSFT')
+    res2 = p.save_instrument('MSFT')
     assert 'ya está' in res2
-    assert p.tickers.count('MSFT') == 1
+    assert p.instruments.count('MSFT') == 1
 
 
 def test_fetch_data_with_dataframe():
