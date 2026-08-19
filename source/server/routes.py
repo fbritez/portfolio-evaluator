@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, abort, request
 
-from provider.instrument_provider import InstrumentProvider
-from provider.portfolio_provider import PortfolioProvider
+from source.provider.instrument_provider import InstrumentProvider
+from source.provider.portfolio_provider import PortfolioProvider
 from source.model.portfolio import Portfolio
 from .data import tickers
 

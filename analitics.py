@@ -1,10 +1,9 @@
-import logging
 from functools import lru_cache
 
 import pandas as pd
 import yfinance as yf
 
-logger = logging.getLogger(__name__)
+from source.utils.logger import logger
 
 
 class Analytics:

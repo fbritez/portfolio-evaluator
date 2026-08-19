@@ -1,11 +1,9 @@
-import logging
+from source.utils.logger import logger
 
 import pandas as pd
 
 from analitics import Analytics
-from provider.instrument_provider import InstrumentProvider
-
-logger = logging.getLogger(__name__)
+from source.provider.instrument_provider import InstrumentProvider
 
 
 class Portfolio:
@@ -27,17 +25,18 @@ class Portfolio:
             self._evaluated_portfolio = self.calculate_montly_valuation()
 
     def save(self):
-        from provider.portfolio_provider import PortfolioProvider
+        from source.provider.portfolio_provider import PortfolioProvider
 
         return PortfolioProvider.save(self)
 
     @classmethod
     def load(cls, name):
-        from provider.portfolio_provider import PortfolioProvider
+        from source.provider.portfolio_provider import PortfolioProvider
 
         return PortfolioProvider.get_by_name(name)
 
     def to_dict(self, simple=False):
+        logger.info('Converting portfolio to dictionary...')
         if simple:
             return {
                 "id": self.id,
@@ -161,7 +160,6 @@ class Portfolio:
                     current_price = prices.iloc[-1]
                     variation_pct = ((current_price - initial_price) / initial_price) * 100
                     sma200 = self.get_sma200(instrument)
-                    print('Que mierda hay aca', sma200)
                     results.append({
                         "Ticker": instrument,
                         "PriceMonthAgo": round(initial_price, 2),
