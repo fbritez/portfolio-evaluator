@@ -20,28 +20,6 @@ def get_tickers():
     return jsonify(tickers)
 
 
-@bp.route("/tickers/<symbol>", methods=["GET"])
-def get_ticker(symbol):
-    """
-    Get a ticker by symbol
-    ---
-    parameters:
-      - name: symbol
-        in: path
-        type: string
-        required: true
-    responses:
-      200:
-        description: Ticker found
-      404:
-        description: Ticker not found
-    """
-    symbol = symbol.upper()
-    if symbol in tickers:
-        return jsonify({"symbol": symbol})
-    abort(404)
-
-
 @bp.route("/portfolios", methods=["GET"])
 def get_portfolios():
     """
@@ -75,8 +53,60 @@ def get_portfolio_by_name(name):
         abort(404)
 
     portfolio.data = portfolio.fetch_data()
-    portfolio._evaluated_portfolio = portfolio.calculate_montly_variation()
+    portfolio._evaluated_portfolio = portfolio.calculate_montly_valuation()
     return jsonify(portfolio.to_dict())
+
+
+@bp.route("/portfolio/simple/<name>", methods=["GET"])
+def get_simple_portfolio(name):
+    """
+    Get a portfolio by name using the same behavior as the detailed endpoint.
+    ---
+    parameters:
+      - name: name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Simple portfolio loaded
+      404:
+        description: Portfolio not found
+    """
+    portfolio = PortfolioProvider.get_by_name(name)
+    if portfolio is None:
+        abort(404)
+
+    portfolio.data = portfolio.fetch_data()
+    return jsonify(portfolio.to_dict(simple=True))
+
+
+@bp.route("/portfolios/<name>/technical-analysis", methods=["GET"])
+def get_portfolio_technical_analysis(name):
+    """
+    Get the technical analysis for every instrument in a portfolio
+    ---
+    parameters:
+      - name: name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Technical analysis returned successfully
+      404:
+        description: Portfolio not found
+    """
+    portfolio = PortfolioProvider.get_by_name(name)
+    if portfolio is None:
+        abort(404)
+
+    portfolio.data = portfolio.fetch_data()
+    portfolio._evaluated_portfolio = portfolio.calculate_montly_valuation()
+    return jsonify({
+        "portfolio": portfolio.name,
+        "technical_analysis": portfolio.get_technical_analysis(),
+    })
 
 
 @bp.route("/portfolios", methods=["POST"])

@@ -30,8 +30,8 @@ def get_database_path():
     for path in candidates:
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.touch(exist_ok=True)
-            path.unlink(missing_ok=True)
+            if not path.exists():
+                path.touch(exist_ok=True)
             return path
         except (OSError, PermissionError):
             continue
