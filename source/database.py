@@ -1,14 +1,15 @@
 import json
+import os
 import sqlite3
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATABASE_DIR = BASE_DIR / "data"
-DATABASE_PATH = DATABASE_DIR / "portfolio.db"
+DATABASE_PATH = Path(os.getenv("PORTFOLIO_DB_PATH", str(DATABASE_DIR / "portfolio.db")))
 
 
 def get_connection():
-    DATABASE_DIR.mkdir(parents=True, exist_ok=True)
+    DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     return conn
