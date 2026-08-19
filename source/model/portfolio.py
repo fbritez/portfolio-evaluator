@@ -14,7 +14,7 @@ class Portfolio:
             self._evaluated_portfolio = None
         else:
             self.data = self.fetch_data()
-            self._evaluated_portfolio = self.calculate_montly_variation()
+            self._evaluated_portfolio = self.calculate_montly_valuation()
 
     def save(self):
         from source.database import save_portfolio
@@ -28,9 +28,9 @@ class Portfolio:
         return load_portfolio(name)
 
     def to_dict(self):
-        evaluated = self.calculate_montly_variation() if self.data is None else self._evaluated_portfolio
+        evaluated = self.calculate_montly_valuation() if self.data is None else self._evaluated_portfolio
         if evaluated is None:
-            evaluated = self.calculate_montly_variation()
+            evaluated = self.calculate_montly_valuation()
 
         return {
             "id": self.id,
@@ -40,6 +40,9 @@ class Portfolio:
         }
 
     def fetch_data(self):
+        if not self.tickers:
+            return pd.DataFrame()
+
         import yfinance as yf
 
         print("Getting quotations for the last month...")
@@ -98,7 +101,10 @@ class Portfolio:
             "Trend": "Bullish (above)" if current_price > sma_200 else "Bearish (below)"
         }
 
-    def calculate_montly_variation(self):
+    def calculate_montly_valuation(self):
+        if not self.tickers:
+            return pd.DataFrame(columns=["Ticker", "PriceMonthAgo", "CurrentPrice", "Variation", "SMA200", "Trend"])
+
         if self.data is None:
             self.data = self.fetch_data()
 
@@ -136,3 +142,6 @@ class Portfolio:
             df = df.sort_values(by="Variation", ascending=False, ignore_index=True)
 
         return df
+
+    def calculate_montly_variation(self):
+        return self.calculate_montly_valuation()

@@ -118,10 +118,48 @@ def create_portfolio():
     if not name:
         return jsonify({"error": "Portfolio name is required."}), 400
 
+    clean_name = str(name).strip()
+    if not clean_name:
+        return jsonify({"error": "Portfolio name is required."}), 400
+
     if not isinstance(tickers, list) or not tickers:
         return jsonify({"error": "Portfolio tickers must be a non-empty list."}), 400
 
-    portfolio = Portfolio(tickers=[str(t).upper() for t in tickers], name=str(name), lazy=True)
+    portfolio = Portfolio(tickers=[str(t).upper() for t in tickers], name=clean_name, lazy=True)
+    saved = save_portfolio(portfolio)
+
+    return jsonify({
+        "id": saved.id,
+        "name": saved.name,
+        "tickers": saved.tickers,
+    }), 201
+
+
+@bp.route("/portfolios/empty/<name>", methods=["POST"])
+def create_empty_portfolio(name):
+    """
+    Create an empty portfolio by name
+    ---
+    parameters:
+      - name: name
+        in: path
+        type: string
+        required: true
+    responses:
+      201:
+        description: Empty portfolio created successfully
+      400:
+        description: Invalid name
+    """
+    clean_name = str(name).strip()
+    if not clean_name:
+        return jsonify({"error": "Portfolio name is required."}), 400
+
+    existing = Portfolio.load(clean_name)
+    if existing is not None:
+        return jsonify({"error": f"Portfolio '{clean_name}' already exists."}), 409
+
+    portfolio = Portfolio(tickers=[], name=clean_name, lazy=True)
     saved = save_portfolio(portfolio)
 
     return jsonify({

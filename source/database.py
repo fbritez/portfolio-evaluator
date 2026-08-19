@@ -23,8 +23,8 @@ def get_database_path():
         candidates.append(Path(configured_path))
 
     candidates.extend([
-        Path(tempfile.gettempdir()) / "portfolio.db",
         DATABASE_DIR / "portfolio.db",
+        Path(tempfile.gettempdir()) / "portfolio.db",
     ])
 
     for path in candidates:
