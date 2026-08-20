@@ -13,22 +13,21 @@ def create_app():
     # Ensure root logger is configured so module-level loggers (logging.getLogger(__name__))
     # propagate to a console handler even when the app is imported (not run via app.py).
     root = logging.getLogger()
-    if not root.handlers:
-        root.setLevel(logging.INFO)
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.INFO)
-        stream_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
-        root.addHandler(stream_handler)
+    # Always create a stream handler instance so the variable exists in all code paths
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.INFO)
+    stream_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
+
 
     # Make sure Flask's app logger also has a handler and doesn't duplicate output
     app.logger.setLevel(logging.INFO)
-    if not app.logger.handlers:
+    if not app.logger.handlers and stream_handler is not None:
         app.logger.addHandler(stream_handler)
 
     # Ensure werkzeug (the HTTP server) logs are visible
     werk = logging.getLogger('werkzeug')
     werk.setLevel(logging.INFO)
-    if not werk.handlers:
+    if not werk.handlers and stream_handler is not None:
         werk.addHandler(stream_handler)
 
     CORS(

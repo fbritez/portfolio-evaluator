@@ -26,9 +26,9 @@ class Analytics:
         try:
             df['SMA_200'] = df['Close'].rolling(window=200).mean()
             current_price = float(df['Close'].iloc[-1])
-            current_price = current_price if current_price is not None or current_price is not 'nan' else 0
+            current_price = current_price if current_price is not None or current_price != 'nan' else 0
             sma_200 = float(df['SMA_200'].iloc[-1])
-            sma_200 = sma_200 if sma_200 is not None or sma_200 is not 'nan' else 0
+            sma_200 = sma_200 if sma_200 is not None or sma_200 != 'nan' else 0
         except Exception:
             logger.exception("Error occurred while calculating SMA_200 for %s", symbol)
 
@@ -99,12 +99,14 @@ class Analytics:
     @staticmethod
     @lru_cache(maxsize=256)
     def scan_instrument(symbol: str):
+        logger.info('Calling %s', symbol)
         symbol = str(symbol).strip().upper()
 
         try:
             df = yf.download(symbol, period="1y", progress=False)
 
             if df.empty or len(df) < 200:
+                logger.info("Not enough data for %s", symbol)
                 return None
 
             if isinstance(df.columns, pd.MultiIndex):
@@ -133,6 +135,7 @@ class Analytics:
                 signals.append("Price recovering SMA 200")
 
             if not signals:
+                logger.info('No significant signals detected for %s', symbol)
                 return None
 
             return {
